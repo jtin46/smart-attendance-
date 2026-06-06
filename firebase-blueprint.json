@@ -1,0 +1,225 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A student, teacher, or admin account details.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Unique Firebase Authentication UID." },
+        "name": { "type": "string", "description": "Display name of the user." },
+        "email": { "type": "string", "description": "Verified email address of the user." },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student"], "description": "Access level." },
+        "collegeCode": { "type": "string", "description": "College connection code." },
+        "year": { "type": "string", "description": "Academic study year (e.g., 1st Year, 2nd Year)." },
+        "department": { "type": "string", "description": "Department field (e.g., Computer Engineering, AIDS)." },
+        "division": { "type": "string", "description": "Division of the class (e.g., A, B, C)." }
+      },
+      "required": ["userId", "name", "email", "role"]
+    },
+    "College": {
+      "title": "College",
+      "description": "College details created by administration.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "required": ["id", "name", "code"]
+    },
+    "ClassSession": {
+      "title": "ClassSession",
+      "description": "An active or archived class attendance session created by a teacher.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "className": { "type": "string" },
+        "sessionTime": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "radius": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "durationSeconds": { "type": "number" },
+        "verificationCode": { "type": "string" }
+      },
+      "required": ["id", "className", "collegeCode", "year", "department", "division", "latitude", "longitude", "radius", "createdAt"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Individual student attendance records for class sessions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "className": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" },
+        "status": { "type": "string", "enum": ["Present", "Absent"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "studentId", "studentName", "sessionId", "status", "timestamp"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "Campus announcements posted by teachers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "message": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "teacherId", "teacherName", "message", "collegeCode", "createdAt"]
+    },
+    "Timetable": {
+      "title": "Timetable",
+      "description": "Academic schedule details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subject": { "type": "string" },
+        "time": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" }
+      },
+      "required": ["id", "subject", "time", "collegeCode", "year", "department", "division"]
+    },
+    "CurriculumActivity": {
+      "title": "CurriculumActivity",
+      "description": "Shared video lecture with integrated quiz.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "youtubeUrl": { "type": "string" },
+        "topic": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "quiz": {
+          "type": "array"
+        }
+      },
+      "required": ["id", "teacherId", "youtubeUrl", "topic", "collegeCode", "year", "department", "division", "createdAt", "quiz"]
+    },
+    "CurriculumAttendance": {
+      "title": "CurriculumAttendance",
+      "description": "Completion reports of quiz-based curriculum activities.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "activityId": { "type": "string" },
+        "topic": { "type": "string" },
+        "collegeCode": { "type": "string" },
+        "year": { "type": "string" },
+        "department": { "type": "string" },
+        "division": { "type": "string" },
+        "quizScore": { "type": "number" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Completed"] }
+      },
+      "required": ["id", "studentId", "studentName", "activityId", "quizScore", "completedAt", "status"]
+    },
+    "AcademicYear": {
+      "title": "AcademicYear",
+      "description": "An academic year level affiliated with a college.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "collegeCode": { "type": "string" }
+      },
+      "required": ["name", "collegeCode"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "An academic department/branch affiliated with a college.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "collegeCode": { "type": "string" }
+      },
+      "required": ["name", "collegeCode"]
+    },
+    "SupportRequest": {
+      "title": "SupportRequest",
+      "description": "Help requests and support tickets submitted by campus users.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user who submitted the request." },
+        "userName": { "type": "string", "description": "Display name of the user." },
+        "userEmail": { "type": "string", "description": "Email address of the user." },
+        "role": { "type": "string", "description": "Access role of the user." },
+        "category": { "type": "string", "description": "Selected ticket category." },
+        "message": { "type": "string", "description": "Detailed question or issue." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Submission time." },
+        "status": { "type": "string", "enum": ["open", "closed"], "description": "Resolution status." }
+      },
+      "required": ["userId", "userName", "userEmail", "role", "category", "message", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered academic accounts and roles."
+    },
+    "/colleges/{collegeId}": {
+      "schema": "College",
+      "description": "Lists of available campuses/colleges."
+    },
+    "/years/{yearId}": {
+      "schema": "AcademicYear",
+      "description": "Academic years under a college."
+    },
+    "/departments/{departmentId}": {
+      "schema": "Department",
+      "description": "Departments/branches under a college."
+    },
+    "/class_sessions/{sessionId}": {
+      "schema": "ClassSession",
+      "description": "Generated attendance gates."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Student attendance results."
+    },
+    "/notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "Board notifications."
+    },
+    "/timetable/{timetableId}": {
+      "schema": "Timetable",
+      "description": "Subject schedules."
+    },
+    "/curriculum_activities/{activityId}": {
+      "schema": "CurriculumActivity",
+      "description": "Virtual lessons and quiz keys."
+    },
+    "/curriculum_attendance/{curriculumAttendanceId}": {
+      "schema": "CurriculumAttendance",
+      "description": "Classroom assignments scores."
+    },
+    "/support_requests/{requestId}": {
+      "schema": "SupportRequest",
+      "description": "User support inquiries and academic assistance reports."
+    }
+  }
+}

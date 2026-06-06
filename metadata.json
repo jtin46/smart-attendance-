@@ -1,0 +1,6 @@
+{
+  "name": "Smart Attendance & Curriculum",
+  "description": "An interactive classroom portal featuring real-time geolocation QR attendance check-ins, multi-role user dashboards, and dynamic practice quizzes.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

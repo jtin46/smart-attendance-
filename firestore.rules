@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny Catch-all global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "godejatin@gmail.com" ||
+        request.auth.token.email == "sujan@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+      );
+    }
+
+    function isTeacher() {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher") ||
+        isAdmin()
+      );
+    }
+
+    function isStudent() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "student"
+      );
+    }
+
+    function hasRole(roleName) {
+      return isSignedIn() && (
+        (roleName == "admin" && isAdmin()) ||
+        (roleName == "teacher" && isTeacher()) ||
+        (roleName == "student" && isStudent())
+      );
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && (userId == request.auth.uid || hasRole('admin'));
+      allow update: if isSignedIn() && (userId == request.auth.uid || hasRole('admin'));
+      allow delete: if hasRole('admin');
+    }
+
+    // Colleges Collection
+    match /colleges/{collegeId} {
+      allow read: if true;
+      allow write: if hasRole('admin');
+    }
+
+    // Academic Years Collection
+    match /years/{yearId} {
+      allow read: if true;
+      allow write: if hasRole('admin');
+    }
+
+    // Departments Collection
+    match /departments/{departmentId} {
+      allow read: if true;
+      allow write: if hasRole('admin');
+    }
+
+    // Class Sessions Collection (Lectures scheduled/live)
+    match /class_sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow write: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Class Attendance Records (student_id + session_id)
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (hasRole('student') || hasRole('teacher') || hasRole('admin'));
+      allow update, delete: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Notices Board Collection
+    match /notices/{noticeId} {
+      allow read: if isSignedIn();
+      allow write: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Academic Timetables Collection
+    match /timetable/{timetableId} {
+      allow read: if isSignedIn();
+      allow write: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Curriculum Activities Collection (Shared video lectures + generated quizzes)
+    match /curriculum_activities/{activityId} {
+      allow read: if isSignedIn();
+      allow write: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Curriculum Engagement Attendance (Scores and Completion flags)
+    match /curriculum_attendance/{curriculumAttendanceId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (hasRole('student') || hasRole('teacher') || hasRole('admin'));
+      allow update, delete: if hasRole('teacher') || hasRole('admin');
+    }
+
+    // Support Requests Collection (Submitted inquiries and tickets)
+    match /support_requests/{requestId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || hasRole('admin'));
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || hasRole('admin'));
+      allow create: if isSignedIn();
+      allow update, delete: if hasRole('admin');
+    }
+  }
+}
