@@ -1,5 +1,5 @@
 import express from "express";
-import "dotenv/config";import "dotenv/config";
+import "dotenv/config";
 import path from "path";
 import dns from "dns";
 import { createServer as createViteServer } from "vite";
