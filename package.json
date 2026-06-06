@@ -33,5 +33,12 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.1": true,
+    "@google/genai@2.8.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.0": true,
+    "protobufjs@7.6.2": true
   }
 }
