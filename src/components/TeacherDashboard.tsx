@@ -548,9 +548,9 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-8 font-sans" id="teacher-dashboard-view">
+    <div className="space-y-6 max-w-6xl mx-auto p-3 sm:p-4 md:p-8 font-sans" id="teacher-dashboard-view">
       {/* Visual greeting and administration card */}
-      <div className="relative rounded-2xl overflow-hidden shadow-md border border-amber-100/50 p-6 bg-gradient-to-r from-slate-900 via-amber-950 to-stone-900 text-white min-h-[160px] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="relative rounded-2xl overflow-hidden shadow-md border border-amber-100/50 p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-amber-950 to-stone-900 text-white min-h-[160px] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="absolute inset-0 opacity-15 pointer-events-none mix-blend-overlay">
           <img 
             src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=1200&auto=format&fit=crop" 
@@ -559,47 +559,47 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
             referrerPolicy="no-referrer"
           />
         </div>
-        <div className="space-y-1.5 relative z-10">
+        <div className="space-y-1.5 relative z-10 w-full md:w-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-mono text-amber-300 font-bold border border-white/10 uppercase tracking-widest">
             🏫 Professional Faculty Panel
           </div>
-          <h1 className="font-display font-extrabold text-2xl tracking-tight text-white mt-1">
+          <h1 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-white mt-1">
             Welcome back, Prof. {user.name}
           </h1>
           <p className="text-xs text-stone-200 leading-relaxed">
-            Campus: <strong className="font-mono text-amber-300">{user.collegeCode}</strong> &bull; Department: <strong className="font-sans text-amber-300">{user.department}</strong>
+            Campus: <strong className="font-mono text-amber-300">{user.collegeCode}</strong> &bull; Dept: <strong className="font-sans text-amber-300">{user.department}</strong>
           </p>
         </div>
 
         {/* Global targeting select list to quickly partition lectures */}
-        <div className="relative z-10 flex bg-white/10 backdrop-blur-md p-2 rounded-xl border border-white/10 gap-2 flex-wrap items-center shadow-sm">
-          <div>
+        <div className="relative z-10 flex bg-slate-900/40 dark:bg-black/40 backdrop-blur-md p-2 rounded-xl border border-white/10 gap-2 flex-wrap items-center shadow-sm w-full md:w-auto">
+          <div className="flex-1 md:flex-none min-w-[70px]">
             <select
               value={targetYear}
               onChange={(e) => { setTargetYear(e.target.value); }}
-              className="px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none"
+              className="w-full px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none"
             >
               {collegeYears.map((yr, idx) => (
                 <option key={`${yr}-${idx}`} value={yr}>{yr}</option>
               ))}
             </select>
           </div>
-          <div>
+          <div className="flex-1 md:flex-none min-w-[100px]">
             <select
               value={targetDept}
               onChange={(e) => { setTargetDept(e.target.value); }}
-              className="px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none"
+              className="w-full px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none truncate"
             >
               {collegeDepts.map((d, idx) => (
                 <option key={`${d}-${idx}`} value={d}>{d}</option>
               ))}
             </select>
           </div>
-          <div>
+          <div className="flex-1 md:flex-none min-w-[60px]">
             <select
               value={targetDiv}
               onChange={(e) => { setTargetDiv(e.target.value); }}
-              className="px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none"
+              className="w-full px-2.5 py-1.5 bg-slate-900 border border-white/15 text-xs text-white rounded-lg font-bold focus:outline-none"
             >
               <option value="A">Div A</option>
               <option value="B">Div B</option>
@@ -609,7 +609,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
           </div>
           <button 
             onClick={loadActiveSessionAndConfig}
-            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg shadow-sm border border-amber-400 cursor-pointer transition"
+            className="w-full md:w-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg shadow-sm border border-amber-400 cursor-pointer transition select-none"
           >
             Apply Target
           </button>
@@ -638,61 +638,73 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {/* Dashboard Nav Tabs */}
-      <div className="flex border-b border-slate-200 overflow-x-auto gap-6 sm:overflow-visible no-scrollbar" id="teacher-tabs">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto gap-2 md:gap-6 sm:overflow-visible no-scrollbar pb-1.5 md:pb-0" id="teacher-tabs">
         <button
           onClick={() => { setActiveTab("session"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "session" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "session" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <QrCode className="h-4.5 w-4.5" /> Start Gate
+          <QrCode className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Start Gate
         </button>
         <button
           onClick={() => { setActiveTab("manual"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "manual" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "manual" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Users className="h-4.5 w-4.5" /> Live Grid
+          <Users className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Live Grid
         </button>
         <button
           onClick={() => { setActiveTab("reports"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "reports" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "reports" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <FileDown className="h-4.5 w-4.5" /> Download Reports
+          <FileDown className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Reports
         </button>
         <button
           onClick={() => { setActiveTab("curriculum"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "curriculum" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "curriculum" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Video className="h-4.5 w-4.5" /> Shared Activities
+          <Video className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Shared Activities
         </button>
         <button
           onClick={() => { setActiveTab("timetable"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "timetable" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "timetable" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Calendar className="h-4.5 w-4.5" /> Schedule Setup
+          <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Schedule Setup
         </button>
         <button
           onClick={() => { setActiveTab("notices"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "notices" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "notices" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Bell className="h-4.5 w-4.5" /> Notice Board
+          <Bell className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> Notice Board
         </button>
       </div>
 
       {activeTab === "session" && (
-        <div className="grid md:grid-cols-12 gap-6" id="teacher-session-tab">
+        <div className="grid md:grid-cols-12 gap-4 md:gap-6" id="teacher-session-tab">
           {/* Form to activate Class */}
-          <div className="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-5 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 font-display font-extrabold text-sm text-slate-800 border-b border-slate-100 pb-2">
               <QrCode className="text-indigo-600 h-5 w-5" />
               <span>Launch Attendance Gate</span>
@@ -783,7 +795,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
           </div>
 
           {/* Dynamic Active QR panel */}
-          <div className="md:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+          <div className="md:col-span-7 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
             {activeSession ? (
               <div className="space-y-4 w-full" id="session-active-card">
                 <div className="flex items-center gap-2 py-1 px-3.5 bg-emerald-50 text-emerald-700 text-xs font-mono font-bold rounded-lg border border-emerald-200 mx-auto w-fit">
@@ -920,18 +932,18 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {activeTab === "reports" && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6" id="teacher-reports-tab">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6" id="teacher-reports-tab">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
             <div className="space-y-1">
               <h3 className="font-display font-extrabold text-base text-slate-800">📊 Past Sessions Attendance</h3>
               <p className="text-xs text-slate-400">Filter past session registers, inspect roster marks, and trigger CSV downloads.</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
               <select
                 value={selectedReportSession}
                 onChange={(e) => setSelectedReportSession(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none"
+                className="w-full sm:w-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none"
               >
                 <option value="">Choose Class Session...</option>
                 {allSessions.map((s) => (
@@ -941,7 +953,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
 
               <button
                 onClick={triggerCSVDownload}
-                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-sm border border-indigo-500 cursor-pointer"
+                className="w-full sm:w-auto px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow-sm border border-indigo-500 cursor-pointer"
               >
                 <FileDown className="h-4 w-4" /> Download CSV
               </button>
@@ -988,9 +1000,9 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {activeTab === "curriculum" && (
-        <div className="grid md:grid-cols-12 gap-6" id="teacher-curriculum-tab">
+        <div className="grid md:grid-cols-12 gap-4 md:gap-6" id="teacher-curriculum-tab">
           {/* Lecture Publish Form */}
-          <div className="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-5 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 font-display font-extrabold text-sm text-slate-800 pb-2 border-b border-slate-100">
               <Video className="text-indigo-600 h-5 w-5" />
               <span>Offline Lecture Curricula</span>
@@ -1053,7 +1065,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
           </div>
 
           {/* Past Curriculums view */}
-          <div className="md:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-7 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-base text-slate-800">Previously Shared Activities</h3>
             {activitiesList.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm">No remote activities shared yet. Share a YouTube link on the left to start.</div>
@@ -1086,9 +1098,9 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {activeTab === "timetable" && (
-        <div className="grid md:grid-cols-12 gap-6" id="teacher-timetable-tab">
+        <div className="grid md:grid-cols-12 gap-4 md:gap-6" id="teacher-timetable-tab">
           {/* Add schedule form */}
-          <div className="md:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-base text-slate-800">Map Class Schedule</h3>
             
             <form onSubmit={handleAddTimetable} className="space-y-4">
@@ -1126,7 +1138,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
           </div>
 
           {/* Timetable schedule list */}
-          <div className="md:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-8 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-base text-slate-800">Affiliated Timetable Slots</h3>
             {timetable.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm">No scheduled subjects defined.</div>
@@ -1170,9 +1182,9 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {activeTab === "notices" && (
-        <div className="grid md:grid-cols-12 gap-6" id="teacher-notices-tab">
+        <div className="grid md:grid-cols-12 gap-4 md:gap-6" id="teacher-notices-tab">
           {/* Post Notice */}
-          <div className="md:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-base text-slate-800">Publish Notice</h3>
             
             <form onSubmit={handleAddNotice} className="space-y-4">
@@ -1198,7 +1210,7 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
           </div>
 
           {/* Historical Notices */}
-          <div className="md:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-8 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-base text-slate-800">University Bulletin</h3>
             {notices.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm">No notifications shared on the boards.</div>

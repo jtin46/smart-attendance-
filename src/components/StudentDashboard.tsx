@@ -7,7 +7,8 @@ import {
   doc, 
   setDoc,
   getDoc,
-  addDoc
+  addDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 import { 
@@ -253,80 +254,110 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Load roster targets
+  // Load roster targets dynamically behind the scenes (No manual trigger needed)
   const loadStudentData = async () => {
-    try {
-      const col = user.collegeCode || "DEFAULT";
-
-      // 1. Fetch live active sessions gating for this student classes
-      const sessionsQ = query(
-        collection(db, "class_sessions"),
-        where("collegeCode", "==", col),
-        where("year", "==", user.year || "3rd Year"),
-        where("department", "==", user.department || "Computer Engineering"),
-        where("division", "==", user.division || "A")
-      );
-      const sessSnap = await getDocs(sessionsQ);
-      const sessList: ClassSession[] = [];
-      sessSnap.forEach((doc) => { sessList.push({ ...doc.data() as ClassSession, id: doc.id }); });
-      setActiveSessions(sessList);
-
-      // 2. Fetch past attendance logs of this student
-      const pastQ = query(
-        collection(db, "attendance"),
-        where("collegeCode", "==", col),
-        where("studentId", "==", user.userId)
-      );
-      const pastSnap = await getDocs(pastQ);
-      const pastList: AttendanceRecord[] = [];
-      pastSnap.forEach((doc) => { pastList.push(doc.data() as AttendanceRecord); });
-      setPastAttendance(pastList);
-
-      // 3. Fetch lessons
-      const lessonsQ = query(
-        collection(db, "curriculum_activities"),
-        where("collegeCode", "==", col),
-        where("year", "==", user.year || "3rd Year"),
-        where("department", "==", user.department || "Computer Engineering"),
-        where("division", "==", user.division || "A")
-      );
-      const lessonsSnap = await getDocs(lessonsQ);
-      const lessonsList: CurriculumActivityItem[] = [];
-      lessonsSnap.forEach((doc) => { lessonsList.push({ ...doc.data() as CurriculumActivityItem, id: doc.id }); });
-      setLessons(lessonsList);
-
-      // 4. Timetable details
-      const tQ = query(
-        collection(db, "timetable"),
-        where("collegeCode", "==", col),
-        where("year", "==", user.year || "3rd Year"),
-        where("department", "==", user.department || "Computer Engineering"),
-        where("division", "==", user.division || "A")
-      );
-      const tSnap = await getDocs(tQ);
-      const tList: TimetableItem[] = [];
-      tSnap.forEach((doc) => { tList.push(doc.data() as TimetableItem); });
-      setTimetable(tList);
-
-      // 5. University announcements
-      const nQ = query(
-        collection(db, "notices"),
-        where("collegeCode", "==", col),
-        where("year", "==", user.year || "3rd Year"),
-        where("department", "==", user.department || "Computer Engineering"),
-        where("division", "==", user.division || "A")
-      );
-      const nSnap = await getDocs(nQ);
-      const nList: NoticeItem[] = [];
-      nSnap.forEach((doc) => { nList.push(doc.data() as NoticeItem); });
-      setNotices(nList);
-    } catch (err) {
-      console.error("Failed to load student profiles", err);
-    }
+    // Handled in real-time by subscriptions below
   };
 
   useEffect(() => {
-    loadStudentData();
+    const col = user.collegeCode || "DEFAULT";
+    const year = user.year || "3rd Year";
+    const dept = user.department || "Computer Engineering";
+    const div = user.division || "A";
+
+    const pathClassSessions = "class_sessions";
+    const sessionsQ = query(
+      collection(db, pathClassSessions),
+      where("collegeCode", "==", col),
+      where("year", "==", year),
+      where("department", "==", dept),
+      where("division", "==", div)
+    );
+
+    const unsubSessions = onSnapshot(sessionsQ, (snapshot) => {
+      const sessList: ClassSession[] = [];
+      snapshot.forEach((doc) => {
+        sessList.push({ ...doc.data() as ClassSession, id: doc.id });
+      });
+      setActiveSessions(sessList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, pathClassSessions);
+    });
+
+    const pathAttendance = "attendance";
+    const pastQ = query(
+      collection(db, pathAttendance),
+      where("collegeCode", "==", col),
+      where("studentId", "==", user.userId)
+    );
+
+    const unsubAttendance = onSnapshot(pastQ, (snapshot) => {
+      const pastList: AttendanceRecord[] = [];
+      snapshot.forEach((doc) => {
+        pastList.push(doc.data() as AttendanceRecord);
+      });
+      setPastAttendance(pastList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, pathAttendance);
+    });
+
+    const pathCurriculum = "curriculum_activities";
+    const lessonsQ = query(
+      collection(db, pathCurriculum),
+      where("collegeCode", "==", col),
+      where("year", "==", year),
+      where("department", "==", dept),
+      where("division", "==", div)
+    );
+
+    const unsubLessons = onSnapshot(lessonsQ, (snapshot) => {
+      const lessonsList: CurriculumActivityItem[] = [];
+      snapshot.forEach((doc) => {
+        lessonsList.push({ ...doc.data() as CurriculumActivityItem, id: doc.id });
+      });
+      setLessons(lessonsList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, pathCurriculum);
+    });
+
+    const pathTimetable = "timetable";
+    const tQ = query(
+      collection(db, pathTimetable),
+      where("collegeCode", "==", col),
+      where("year", "==", year),
+      where("department", "==", dept),
+      where("division", "==", div)
+    );
+
+    const unsubTimetable = onSnapshot(tQ, (snapshot) => {
+      const tList: TimetableItem[] = [];
+      snapshot.forEach((doc) => {
+        tList.push(doc.data() as TimetableItem);
+      });
+      setTimetable(tList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, pathTimetable);
+    });
+
+    const pathNotices = "notices";
+    const nQ = query(
+      collection(db, pathNotices),
+      where("collegeCode", "==", col),
+      where("year", "==", year),
+      where("department", "==", dept),
+      where("division", "==", div)
+    );
+
+    const unsubNotices = onSnapshot(nQ, (snapshot) => {
+      const nList: NoticeItem[] = [];
+      snapshot.forEach((doc) => {
+        nList.push(doc.data() as NoticeItem);
+      });
+      setNotices(nList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, pathNotices);
+    });
+
     // Simulate initial location coordinates for student device mapping
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -335,13 +366,21 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           setMyLng(pos.coords.longitude);
         },
         () => {
-          // Default near St Francis
+          // Default near St Francis instit of tech
           setMyLat(19.22745);
           setMyLng(72.85695);
         }
       );
     }
-  }, [activeTab]);
+
+    return () => {
+      unsubSessions();
+      unsubAttendance();
+      unsubLessons();
+      unsubTimetable();
+      unsubNotices();
+    };
+  }, [user.collegeCode, user.year, user.department, user.division, user.userId]);
 
   // Execute Local GPS & Code Check-In
   const handleCheckIn = async (session: ClassSession, overridePhrase?: string) => {
@@ -511,11 +550,11 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
   const attendanceRatio = Math.round((presentLecturesCount / totalLecturesCount) * 100);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-8 font-sans" id="student-dashboard-view">
+    <div className="space-y-6 max-w-6xl mx-auto p-3 sm:p-4 md:p-8 font-sans" id="student-dashboard-view">
       {/* Visual greeting and stats dashboard layout */}
-      <div className="grid md:grid-cols-12 gap-6">
+      <div className="grid md:grid-cols-12 gap-4 md:gap-6">
         {/* Academic Premium Welcome Banner with Image Blend */}
-        <div className="md:col-span-8 relative rounded-2xl overflow-hidden shadow-md border border-indigo-100/50 p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white min-h-[180px] flex flex-col justify-between">
+        <div className="md:col-span-8 relative rounded-2xl overflow-hidden shadow-md border border-indigo-100/50 p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white min-h-[160px] sm:min-h-[180px] flex flex-col justify-between">
           <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
             <img 
               src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop" 
@@ -538,7 +577,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
             </p>
           </div>
 
-          <div className="p-3.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl relative z-10 flex items-center justify-between mt-4">
+          <div className="p-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl relative z-10 flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-3">
             <div className="space-y-0.5">
               <span className="text-[9px] font-mono tracking-widest text-indigo-300 font-bold uppercase block">Classroom Geolocation Sync</span>
               <div className="text-xs font-sans font-bold flex items-center gap-1.5 text-emerald-400">
@@ -546,14 +585,14 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                 {myLat !== null && myLng !== null ? "Secure GPS Location Service Locked" : "Calibrating safe satellite connection..."}
               </div>
             </div>
-            <div className="text-[10px] text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg font-mono font-bold uppercase tracking-wider">
+            <div className="text-[10px] text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-lg font-mono font-bold uppercase tracking-wider self-start sm:self-auto select-none">
               PORTAL ENGAGED
             </div>
           </div>
         </div>
 
         {/* Circular score gauge */}
-        <div className="md:col-span-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-2">
+        <div className="md:col-span-4 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-2">
           <div className="relative flex items-center justify-center h-28 w-28">
             <svg className="w-full h-full transform -rotate-90">
               <circle cx="56" cy="56" r="48" className="stroke-slate-100 fill-none" strokeWidth="8" />
@@ -600,46 +639,56 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       )}
 
       {/* Tabs list menu */}
-      <div className="flex border-b border-slate-200 overflow-x-auto gap-6 sm:overflow-visible no-scrollbar" id="student-tabs">
+      <div className="flex border-b border-slate-200/50 dark:border-slate-800 overflow-x-auto gap-2 md:gap-6 sm:overflow-visible no-scrollbar pb-1.5 md:pb-0" id="student-tabs">
         <button
           onClick={() => { setActiveTab("checkin"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "checkin" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "checkin" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 md:border-b-2 md:border-transparent"
           }`}
         >
-          <MapPin className="h-4.5 w-4.5" /> Check-In Gate
+          <MapPin className="h-4.5 w-4.5" /> <span>Check-In Gate</span>
         </button>
         <button
           onClick={() => { setActiveTab("lessons"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "lessons" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "lessons" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 md:border-b-2 md:border-transparent"
           }`}
         >
-          <Tv className="h-4.5 w-4.5" /> Digital Curricula
+          <Tv className="h-4.5 w-4.5" /> <span>Digital Curricula</span>
         </button>
         <button
           onClick={() => { setActiveTab("chatbot"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "chatbot" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "chatbot" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 md:border-b-2 md:border-transparent"
           }`}
         >
-          <MessageSquare className="h-4.5 w-4.5" /> Academic Chatbot
+          <MessageSquare className="h-4.5 w-4.5" /> <span>Academic Chatbot</span>
         </button>
         <button
           onClick={() => { setActiveTab("timetable"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "timetable" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "timetable" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 md:border-b-2 md:border-transparent"
           }`}
         >
-          <Calendar className="h-4.5 w-4.5" /> Schedule Timetable
+          <Calendar className="h-4.5 w-4.5" /> <span>Schedule Timetable</span>
         </button>
         <button
           onClick={() => { setActiveTab("notices"); setSuccess(null); }}
-          className={`pb-4 text-sm font-semibold transition-all duration-200 border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
-            activeTab === "notices" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-800"
+          className={`px-3.5 py-2 md:py-0 md:pb-4 text-xs md:text-sm font-semibold transition-all duration-200 rounded-xl md:rounded-none whitespace-nowrap flex items-center gap-1.5 cursor-pointer select-none ${
+            activeTab === "notices" 
+              ? "bg-indigo-600 text-white md:bg-transparent md:text-indigo-600 dark:md:text-indigo-400 md:border-b-2 md:border-indigo-600 dark:md:border-indigo-400" 
+              : "bg-slate-100 dark:bg-slate-900 md:bg-transparent dark:md:bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 md:border-b-2 md:border-transparent"
           }`}
         >
-          <Bell className="h-4.5 w-4.5" /> Campus Notices
+          <Bell className="h-4.5 w-4.5" /> <span>Campus Notices</span>
         </button>
       </div>
 
@@ -666,7 +715,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-6 rounded-2xl border border-slate-150 shadow-md space-y-4 max-w-lg mx-auto"
+              className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-150 shadow-md space-y-4 max-w-lg mx-auto"
               id="qr-scan-interactive-console"
             >
               <div className="flex justify-between items-center pb-2 border-b border-slate-100">
@@ -731,7 +780,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           )}
 
           {activeSessions.length === 0 ? (
-            <div className="text-center bg-white p-12 rounded-2xl border border-slate-100/80 shadow-sm max-w-lg mx-auto space-y-4">
+            <div className="text-center bg-white p-6 sm:p-12 rounded-2xl border border-slate-100/80 shadow-sm max-w-lg mx-auto space-y-4">
               <div className="w-16 h-16 bg-indigo-50/80 border border-indigo-100 rounded-2xl flex items-center justify-center mx-auto text-indigo-600 shadow-inner">
                 <School className="h-8 w-8 text-indigo-500" />
               </div>
@@ -747,7 +796,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
               {activeSessions.map((session) => {
                 const attended = pastAttendance.some((p) => p.sessionId === session.id && p.status === "Present");
                 return (
-                  <div key={session.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                  <div key={session.id} className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase font-bold tracking-wider font-mono text-indigo-500 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded">
@@ -819,14 +868,14 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       )}
 
       {activeTab === "lessons" && (
-        <div className="grid md:grid-cols-12 gap-6" id="student-lessons-tab">
+        <div className="grid md:grid-cols-12 gap-4 md:gap-6" id="student-lessons-tab">
           {/* Lessons List panel */}
-          <div className="md:col-span-5 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div className="md:col-span-5 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
             <h3 className="font-display font-bold text-slate-800 text-base">Digital Curriculum Modules</h3>
             <p className="text-slate-400 text-xs leading-relaxed">Watch lecture links and play assessments to log present marks directly in Firestore.</p>
 
             {lessons.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-sm">No remote activities shared yet. Check back later.</div>
+              <div className="text-center py-12 text-slate-400 text-xs text-center">No remote activities shared yet. Check back later.</div>
             ) : (
               <div className="space-y-3">
                 {lessons.map((act) => {
@@ -838,13 +887,13 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                         setActiveVideoItem(act);
                         handleResetQuiz();
                       }}
-                      className={`p-4 rounded-xl border text-left cursor-pointer transition duration-150 ${
+                      className={`p-3.5 rounded-xl border text-left cursor-pointer transition duration-150 ${
                         activeVideoItem?.id === act.id 
                           ? "bg-indigo-50/50 border-indigo-300" 
                           : "bg-white hover:bg-slate-50 border-slate-100"
                       }`}
                     >
-                      <div className="font-bold text-slate-800 text-sm">{act.topic}</div>
+                      <div className="font-bold text-slate-800 text-sm whitespace-normal break-words">{act.topic}</div>
                       <div className="text-[10px] text-slate-400 mt-1 flex justify-between items-center">
                         <span className="font-mono text-indigo-500 uppercase font-black">Interactive Quiz</span>
                         {lessonAttended && (
@@ -859,7 +908,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
           </div>
 
           {/* Video Lesson & Interactive Quiz module */}
-          <div className="md:col-span-7 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center" id="active-lesson-module">
+          <div className="md:col-span-7 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center" id="active-lesson-module">
             {activeVideoItem ? (
               <div className="space-y-6">
                 <div>
@@ -890,7 +939,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
                 )}
 
                 {/* Interactive MCQs */}
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
+                <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
                     <BrainCircuit className="h-5 w-5 text-indigo-600" />
                     <span className="font-display font-bold text-slate-800 text-sm">Interactive Lesson Assessment</span>
@@ -992,25 +1041,25 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       )}
 
       {activeTab === "chatbot" && (
-        <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[520px]" id="student-chatbot-tab">
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[480px] sm:h-[520px]" id="student-chatbot-tab">
           {/* Header */}
-          <div className="p-4 bg-gradient-to-tr from-indigo-700 to-indigo-600 flex items-center justify-between text-white border-b border-indigo-500/10">
-            <div className="flex items-center gap-2.5">
+          <div className="p-3.5 sm:p-4 bg-gradient-to-tr from-indigo-700 to-indigo-600 flex items-center justify-between text-white border-b border-indigo-500/10">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <div className="p-2 bg-white/10 backdrop-blur rounded-xl">
-                <BrainCircuit className="h-5 w-5" />
+                <BrainCircuit className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <h4 className="font-display font-extrabold text-sm leading-tight">Gemini Academic Chatbot</h4>
+                <h4 className="font-display font-extrabold text-xs sm:text-sm leading-tight">Gemini Academic Chatbot</h4>
                 <div className="text-[10px] text-indigo-200">Online &bull; Ask any educational question</div>
               </div>
             </div>
-            <div className="text-[10px] bg-white/15 px-2.5 py-1.5 rounded-lg border border-white/10 font-bold uppercase tracking-wider font-mono">
+            <div className="text-[9px] sm:text-[10px] bg-white/15 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-white/10 font-bold uppercase tracking-wider font-mono">
               Powered by flash-3.5
             </div>
           </div>
 
           {/* Logs */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 no-scrollbar" id="chatlogs-container">
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-4 no-scrollbar" id="chatlogs-container">
             {chatLogs.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-2 py-12">
                 <MessageSquare className="h-10 w-10 text-slate-200" />
@@ -1066,7 +1115,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       )}
 
       {activeTab === "timetable" && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4" id="student-timetable-tab">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4" id="student-timetable-tab">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Calendar className="h-5 w-5 text-indigo-600" />
             <h3 className="font-display font-extrabold text-base text-slate-800">Your Assigned Schedule</h3>
@@ -1093,7 +1142,7 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       )}
 
       {activeTab === "notices" && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4" id="student-notices-tab">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4" id="student-notices-tab">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Bell className="h-5 w-5 text-indigo-600" />
             <h3 className="font-display font-extrabold text-base text-slate-800">University Broadcast Board</h3>

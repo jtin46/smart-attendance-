@@ -158,31 +158,31 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300" id="app-root-container">
       {/* Premium Header Layout */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors duration-300" id="global-app-header">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <motion.div 
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="flex items-center gap-3.5 select-none cursor-pointer" 
+            className="flex items-center gap-2 sm:gap-3.5 select-none cursor-pointer" 
             id="header-branding-logo"
           >
             <div className="relative group">
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 opacity-25 blur-sm group-hover:opacity-40 transition duration-300" />
-              <div className="relative bg-gradient-to-tr from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-purple-500 p-2.5 rounded-2xl text-white shadow-md shadow-indigo-600/10 border border-white/10 dark:border-indigo-400/20">
-                <GraduationCap className="h-5.5 w-5.5 transform group-hover:rotate-6 transition-transform duration-300" />
+              <div className="relative bg-gradient-to-tr from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-purple-500 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-white shadow-md shadow-indigo-600/10 border border-white/10 dark:border-indigo-400/20">
+                <GraduationCap className="h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 transform group-hover:rotate-6 transition-transform duration-300" />
               </div>
             </div>
             <div>
-              <span className="font-sans font-extrabold text-[#0B1220] dark:text-[#F3F4F6] text-[19px] tracking-tight block leading-tight antialiased">
+              <span className="font-sans font-extrabold text-[#0B1220] dark:text-[#F3F4F6] text-[15px] sm:text-[19px] tracking-tight block leading-tight antialiased">
                 Smart Attendance
               </span>
-              <span className="text-[10px] font-mono font-black tracking-[0.16em] text-indigo-600 dark:text-indigo-400 block uppercase pt-0.5">
+              <span className="text-[8px] sm:text-[10px] font-mono font-black tracking-[0.12em] sm:tracking-[0.16em] text-indigo-600 dark:text-indigo-400 block uppercase pt-0.5">
                 Curriculum Integration
               </span>
             </div>
           </motion.div>
 
-          <div className="flex items-center gap-4" id="header-user-badge">
-            <div className="hidden sm:flex flex-col text-right">
+          <div className="flex items-center gap-2 sm:gap-4" id="header-user-badge">
+            <div className="hidden lg:flex flex-col text-right">
               <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
                 {userProfile.name}
               </span>
@@ -191,15 +191,15 @@ export default function App() {
               </span>
             </div>
 
-            <div className="h-10 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className="h-10 w-px bg-slate-200 dark:bg-slate-800 hidden lg:block" />
 
             {/* Profile Avatar with dynamic role color */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="relative">
-                <div className="h-10 w-10 bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold uppercase text-xs">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-indigo-50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold uppercase text-xs">
                   {userProfile.name.substring(0, 2)}
                 </div>
-                <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[7px] text-white ${
+                <div className={`absolute -bottom-0.5 -right-0.5 h-3 sm:h-3.5 w-3 sm:w-3.5 rounded-full border border-white dark:border-slate-900 flex items-center justify-center text-[6px] sm:text-[7px] text-white ${
                   userProfile.role === "admin" 
                     ? "bg-teal-500" 
                     : userProfile.role === "teacher" 
@@ -213,14 +213,14 @@ export default function App() {
               {/* Premium Light/Dark Theme Switcher */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-amber-400 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 font-semibold text-xs"
+                className="p-1.5 sm:p-2.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-amber-400 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 font-semibold text-xs"
                 title={darkMode ? "Switch to light academic theme" : "Switch to midnight study theme"}
                 id="theme-toggle-header-trigger"
               >
                 {darkMode ? (
-                  <Sun className="h-4.5 w-4.5 text-amber-300 transition-all duration-500 hover:rotate-90" />
+                  <Sun className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-amber-300 transition-all duration-500 hover:rotate-90" />
                 ) : (
-                  <Moon className="h-4.5 w-4.5 text-indigo-500 dark:text-indigo-400 transition-all duration-500 hover:-rotate-12" />
+                  <Moon className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-indigo-500 dark:text-indigo-400 transition-all duration-500 hover:-rotate-12" />
                 )}
                 <span className="hidden md:inline text-[11px] font-sans">{darkMode ? "Light Mode" : "Dark Mode"}</span>
               </button>
@@ -228,21 +228,21 @@ export default function App() {
               {/* Premium Help Center trigger next to logout */}
               <button
                 onClick={() => setShowHelpModal(true)}
-                className="p-2.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 font-semibold text-xs"
+                className="p-1.5 sm:p-2.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 font-semibold text-xs"
                 title="Help & Academic Instructions"
                 id="help-toggle-header-trigger"
               >
-                <HelpCircle className="h-4.5 w-4.5 animate-pulse text-indigo-500 dark:text-indigo-400" />
+                <HelpCircle className="h-4 w-4 sm:h-4.5 sm:w-4.5 animate-pulse text-indigo-500 dark:text-indigo-400" />
                 <span className="hidden md:inline text-[11px] font-sans">Help Center</span>
               </button>
 
               <button
                 onClick={handleLogout}
-                className="p-2.5 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl text-slate-400 dark:text-slate-500 transition cursor-pointer"
+                className="p-1.5 sm:p-2.5 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl text-slate-400 dark:text-slate-500 transition cursor-pointer"
                 id="sign-out-trigger"
                 title="Sign out of study sessions"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
