@@ -134,6 +134,18 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
   const [selectedReportSession, setSelectedReportSession] = useState("");
   const [sessionReportLogs, setSessionReportLogs] = useState<AttendanceRecord[]>([]);
 
+  // Custom subject & date/month export states
+  const [customReportSubject, setCustomReportSubject] = useState("All Subjects");
+  const [customReportPeriodMode, setCustomReportPeriodMode] = useState<"date" | "month">("date");
+  const [customReportDate, setCustomReportDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
+  const [customReportMonth, setCustomReportMonth] = useState(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 7);
+  });
+
   // Timetable and notices states
   const [subjectTitle, setSubjectTitle] = useState("");
   const [subjectTime, setSubjectTime] = useState("");
@@ -166,7 +178,10 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       const snap = await getDocs(q);
       const list: ClassSession[] = [];
       snap.forEach((doc) => {
-        list.push({ ...doc.data() as ClassSession, id: doc.id });
+        const item = doc.data() as ClassSession;
+        if (item.isActive !== false) {
+          list.push({ ...item, id: doc.id });
+        }
       });
 
       // Show latest created class session in class target filters
@@ -339,7 +354,8 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
         radius: Number(radius),
         createdAt: new Date().toISOString(),
         durationSeconds: Number(duration),
-        verificationCode: generatedCode
+        verificationCode: generatedCode,
+        isActive: true
       };
 
       await setDoc(doc(db, "class_sessions", recordId), payload);
@@ -478,6 +494,82 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
     downloadAnchor.click();
     document.body.removeChild(downloadAnchor);
     setSuccess("Attendance Spreadsheet exported to study records successfully.");
+  };
+
+  // CSV Custom Export: Subject and Date / Month
+  const triggerCustomFilteredDownload = async () => {
+    setSuccess(null);
+    setErrorMsg(null);
+    try {
+      const q = query(
+        collection(db, "attendance"),
+        where("collegeCode", "==", user.collegeCode || "DEFAULT")
+      );
+      const snap = await getDocs(q);
+      const allRecords: AttendanceRecord[] = [];
+      snap.forEach((doc) => {
+        allRecords.push(doc.data() as AttendanceRecord);
+      });
+
+      if (allRecords.length === 0) {
+        setErrorMsg("No attendance records found for this campus.");
+        return;
+      }
+
+      // Filter in-memory
+      const filtered = allRecords.filter((rec) => {
+        // 1. Check subject
+        if (customReportSubject !== "All Subjects") {
+          if (!rec.className || rec.className.toLowerCase().trim() !== customReportSubject.toLowerCase().trim()) {
+            return false;
+          }
+        }
+
+        // 2. Check period
+        const recDateStr = rec.timestamp ? rec.timestamp.substring(0, 10) : ""; // YYYY-MM-DD
+        const recMonthStr = rec.timestamp ? rec.timestamp.substring(0, 7) : ""; // YYYY-MM
+
+        if (customReportPeriodMode === "date") {
+          return recDateStr === customReportDate;
+        } else {
+          return recMonthStr === customReportMonth;
+        }
+      });
+
+      if (filtered.length === 0) {
+        setErrorMsg(`No records found matching ${customReportSubject !== "All Subjects" ? `subject "${customReportSubject}"` : "any subject"} for the selected ${customReportPeriodMode === "date" ? `date ${customReportDate}` : `month ${customReportMonth}`}.`);
+        return;
+      }
+
+      // Sort filtered items by timestamp ascending
+      filtered.sort((a,b) => (a.timestamp || "").localeCompare(b.timestamp || ""));
+
+      // Build CSV
+      let csvContent = "\ufeff"; // BOM for Excel UTF-8 display compatibility
+      csvContent += "Date,Student ID,Student Name,Year,Department,Division,Subject,Status,Timestamp\r\n";
+
+      filtered.forEach((rec) => {
+        const dateStr = rec.timestamp ? new Date(rec.timestamp).toLocaleDateString() : "";
+        csvContent += `"${dateStr}","${rec.studentId || ""}","${rec.studentName || ""}","${rec.year || ""}","${rec.department || ""}","${rec.division || ""}","${rec.className || ""}","${rec.status || ""}","${rec.timestamp || ""}"\r\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", url);
+
+      const subjectSlug = customReportSubject.replace(/\s+/g, "_");
+      const timeSlug = customReportPeriodMode === "date" ? customReportDate : customReportMonth;
+      downloadAnchor.setAttribute("download", `Attendance_${subjectSlug}_${timeSlug}.csv`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      document.body.removeChild(downloadAnchor);
+
+      setSuccess(`Exported ${filtered.length} records successfully for "${customReportSubject}" during ${customReportPeriodMode === "date" ? `date ${customReportDate}` : `month ${customReportMonth}`}.`);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg("Failed to generate and download filtered attendance data.");
+    }
   };
 
   // Add Notice and timetable helpers
@@ -842,9 +934,17 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
 
                 <button
                   onClick={async () => {
-                    await deleteDoc(doc(db, "class_sessions", activeSession.id));
-                    setSuccess("Active class lock archived successfully.");
-                    await loadActiveSessionAndConfig();
+                    try {
+                      await updateDoc(doc(db, "class_sessions", activeSession.id), {
+                        isActive: false
+                      });
+                      setSuccess("Active class gate terminated successfully! All registered attendance records are stored safely. You can search, inspect, and download daily/monthly CSV rosters anytime from the 'Reports' tab.");
+                      await loadActiveSessionAndConfig();
+                      await loadPastSessions();
+                    } catch (err) {
+                      console.error("Failed to terminate session gate:", err);
+                      setErrorMsg("Failed to terminate active attendance gate.");
+                    }
                   }}
                   className="px-4 py-2 text-xs bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-600 transition font-bold rounded-xl cursor-pointer"
                 >
@@ -852,12 +952,31 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
                 </button>
               </div>
             ) : (
-              <div className="py-12 space-y-2">
+              <div className="py-12 space-y-4">
                 <VideoOff className="h-12 w-12 text-slate-300 mx-auto" />
-                <h4 className="font-display font-bold text-slate-700 text-sm">No Active Attendance Gates Detected</h4>
-                <p className="text-slate-400 text-xs max-w-xs mx-auto">
-                  Configure and launch a session on the left to reveal target QR codes representing GPS-validated check-in nodes.
-                </p>
+                <div className="space-y-1">
+                  <h4 className="font-display font-bold text-slate-700 text-sm">No Active Attendance Gates Detected</h4>
+                  <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                    Configure and launch a session on the left to reveal target QR codes representing GPS-validated check-in nodes.
+                  </p>
+                </div>
+
+                <div className="mt-4 p-4 bg-indigo-50/60 border border-indigo-100/80 rounded-2xl max-w-sm mx-auto text-left space-y-2 animate-fade-in shadow-xs">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 uppercase tracking-wide">
+                    <FileDown className="h-4 w-4 text-indigo-500" />
+                    <span>Post-Class Records Preserved</span>
+                  </div>
+                  <p className="text-[11px] text-indigo-600/90 leading-relaxed font-sans">
+                    When you terminate an active gate, <strong>all register check-in logs are preserved securely</strong>. You can search, inspect, and download daily or specific monthly CSV rosters directly from the <span className="underline font-bold cursor-pointer hover:text-indigo-800" onClick={() => setActiveTab("reports")}>Reports</span> tab at any time.
+                  </p>
+                  <button 
+                    type="button" 
+                    onClick={() => setActiveTab("reports")} 
+                    className="inline-flex items-center text-[11px] font-bold text-indigo-700 hover:text-indigo-900 gap-1 mt-1 cursor-pointer"
+                  >
+                    <span>Open Reports Dashboard</span> &rarr;
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -932,70 +1051,164 @@ export default function TeacherDashboard({ user }: TeacherDashboardProps) {
       )}
 
       {activeTab === "reports" && (
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6" id="teacher-reports-tab">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
-            <div className="space-y-1">
-              <h3 className="font-display font-extrabold text-base text-slate-800">📊 Past Sessions Attendance</h3>
-              <p className="text-xs text-slate-400">Filter past session registers, inspect roster marks, and trigger CSV downloads.</p>
+        <div className="space-y-6" id="teacher-reports-tab">
+          {/* Custom Date / Month & Subject Report Panel */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="font-display font-extrabold text-base text-slate-800 flex items-center gap-2">
+                <FileDown className="text-indigo-600 h-5 w-5" />
+                <span>Custom Subject & Period Reports</span>
+              </h3>
+              <p className="text-xs text-slate-400">Download attendance records for any subject, filtered by a specific calendar date or an entire month.</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-              <select
-                value={selectedReportSession}
-                onChange={(e) => setSelectedReportSession(e.target.value)}
-                className="w-full sm:w-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none"
-              >
-                <option value="">Choose Class Session...</option>
-                {allSessions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.className} ({s.sessionTime} - {new Date(s.createdAt).toLocaleDateString()})</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* Subject Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">1. Select Subject</label>
+                <select
+                  value={customReportSubject}
+                  onChange={(e) => setCustomReportSubject(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="All Subjects">All Subjects</option>
+                  {Array.from(new Set(allSessions.map(s => s.className).filter(Boolean))).map((subjectName) => (
+                    <option key={subjectName} value={subjectName}>{subjectName}</option>
+                  ))}
+                </select>
+              </div>
 
-              <button
-                onClick={triggerCSVDownload}
-                className="w-full sm:w-auto px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow-sm border border-indigo-500 cursor-pointer"
-              >
-                <FileDown className="h-4 w-4" /> Download CSV
-              </button>
+              {/* Period Level (Date vs Month) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">2. Filter Level</label>
+                <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setCustomReportPeriodMode("date")}
+                    className={`py-1.5 text-[11px] font-bold rounded-lg transition ${
+                      customReportPeriodMode === "date"
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Daily Date
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomReportPeriodMode("month")}
+                    className={`py-1.5 text-[11px] font-bold rounded-lg transition ${
+                      customReportPeriodMode === "month"
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Period input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                  3. Select {customReportPeriodMode === "date" ? "Date" : "Month"}
+                </label>
+                {customReportPeriodMode === "date" ? (
+                  <input
+                    type="date"
+                    value={customReportDate}
+                    onChange={(e) => setCustomReportDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-bold focus:outline-none"
+                  />
+                ) : (
+                  <input
+                    type="month"
+                    value={customReportMonth}
+                    onChange={(e) => setCustomReportMonth(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-bold focus:outline-none"
+                  />
+                )}
+              </div>
+
+              {/* Action Button */}
+              <div>
+                <button
+                  type="button"
+                  onClick={triggerCustomFilteredDownload}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm border border-indigo-500 transition cursor-pointer h-10"
+                >
+                  <FileDown className="h-4.5 w-4.5" />
+                  <span>Download Records</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {sessionReportLogs.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
-              No students logged present for the selected session. Export will produce empty metrics.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 text-slate-400 font-mono text-xs uppercase tracking-widest">
-                    <th className="pb-3 text-xs font-semibold pl-2">Student Name</th>
-                    <th className="pb-3 text-xs font-semibold">Status</th>
-                    <th className="pb-3 text-xs font-semibold">Subject Title</th>
-                    <th className="pb-3 text-xs font-semibold">Logged Timestamp</th>
-                    <th className="pb-3 text-xs font-semibold text-right pr-2">Student ID</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessionReportLogs.map((log) => (
-                    <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
-                      <td className="py-3 pl-2">
-                        <div className="font-bold text-slate-800 text-sm">{log.studentName}</div>
-                      </td>
-                      <td className="py-3">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="py-3 text-slate-600 text-xs font-semibold">{log.className}</td>
-                      <td className="py-3 text-xs font-mono text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
-                      <td className="py-3 text-right font-mono text-xs text-slate-400 pr-2">{log.studentId}</td>
-                    </tr>
+          {/* Legacy session report */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-3">
+              <div className="space-y-0.5">
+                <h3 className="font-display font-extrabold text-base text-slate-800">📊 Past Sessions Attendance</h3>
+                <p className="text-xs text-slate-400">Filter past session registers, inspect roster marks, and trigger CSV downloads.</p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                <select
+                  value={selectedReportSession}
+                  onChange={(e) => setSelectedReportSession(e.target.value)}
+                  className="w-full sm:w-auto px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none"
+                >
+                  <option value="">Choose Class Session...</option>
+                  {allSessions.map((s) => (
+                    <option key={s.id} value={s.id}>{s.className} ({s.sessionTime} - {new Date(s.createdAt).toLocaleDateString()})</option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+
+                <button
+                  onClick={triggerCSVDownload}
+                  className="w-full sm:w-auto px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow-sm border border-slate-200 cursor-pointer"
+                >
+                  <FileDown className="h-4 w-4" /> Download CSV
+                </button>
+              </div>
             </div>
-          )}
+
+            {sessionReportLogs.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-sm">
+                No students logged present for the selected session. Export will produce empty metrics.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 font-mono text-xs uppercase tracking-widest">
+                      <th className="pb-3 text-xs font-semibold pl-2">Student Name</th>
+                      <th className="pb-3 text-xs font-semibold">Status</th>
+                      <th className="pb-3 text-xs font-semibold">Subject Title</th>
+                      <th className="pb-3 text-xs font-semibold">Logged Timestamp</th>
+                      <th className="pb-3 text-xs font-semibold text-right pr-2">Student ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessionReportLogs.map((log) => (
+                      <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                        <td className="py-3 pl-2">
+                          <div className="font-bold text-slate-800 text-sm">{log.studentName}</div>
+                        </td>
+                        <td className="py-3">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="py-3 text-slate-600 text-xs font-semibold">{log.className}</td>
+                        <td className="py-3 text-xs font-mono text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
+                        <td className="py-3 text-right font-mono text-xs text-slate-400 pr-2">{log.studentId}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

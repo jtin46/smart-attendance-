@@ -476,16 +476,16 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
       {activeTab === "structure" && (
         <div className="space-y-6 animate-fade-in" id="tab-structure-view">
           {/* Select College */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
               <h3 className="font-display font-semibold text-sm text-slate-800">Manage College Structure</h3>
               <p className="text-slate-400 text-xs">Configure Years and Departments affiliated with a specific college code.</p>
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <select
                 value={selectedColCode}
                 onChange={(e) => setSelectedColCode(e.target.value)}
-                className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-bold font-mono focus:outline-none text-sm cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-bold font-mono focus:outline-none text-sm cursor-pointer truncate max-w-full"
               >
                 {colleges.map((col) => (
                   <option key={col.id} value={col.code}>{col.name} ({col.code})</option>
@@ -601,11 +601,11 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
               <h3 className="font-display font-bold text-base text-slate-800">Rosters & Registered Users</h3>
               <p className="text-slate-400 text-xs">Verify students, divisional groupings, and teaching profiles registered under any campus.</p>
             </div>
-            <div>
+            <div className="w-full md:w-auto">
               <select
                 value={selectedFilterColCode}
                 onChange={(e) => setSelectedFilterColCode(e.target.value)}
-                className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-bold font-mono focus:outline-none text-sm cursor-pointer"
+                className="w-full md:w-auto px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-bold font-mono focus:outline-none text-sm cursor-pointer truncate max-w-full"
               >
                 <option value="">Choose College Code...</option>
                 {colleges.map((col) => (

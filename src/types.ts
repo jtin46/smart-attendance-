@@ -31,6 +31,7 @@ export interface ClassSession {
   createdAt: string;
   durationSeconds: number; // class duration e.g. 3600 for 1 hour
   verificationCode?: string; // fallback QR code match word
+  isActive?: boolean;
 }
 
 export interface AttendanceRecord {

@@ -277,7 +277,10 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
     const unsubSessions = onSnapshot(sessionsQ, (snapshot) => {
       const sessList: ClassSession[] = [];
       snapshot.forEach((doc) => {
-        sessList.push({ ...doc.data() as ClassSession, id: doc.id });
+        const item = doc.data() as ClassSession;
+        if (item.isActive !== false) {
+          sessList.push({ ...item, id: doc.id });
+        }
       });
       setActiveSessions(sessList);
     }, (error) => {
@@ -555,11 +558,11 @@ export default function StudentDashboard({ user }: StudentDashboardProps) {
       <div className="grid md:grid-cols-12 gap-4 md:gap-6">
         {/* Academic Premium Welcome Banner with Image Blend */}
         <div className="md:col-span-8 relative rounded-2xl overflow-hidden shadow-md border border-indigo-100/50 p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white min-h-[160px] sm:min-h-[180px] flex flex-col justify-between">
-          <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
+          <div className="absolute inset-0 opacity-35 pointer-events-none">
             <img 
               src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop" 
               alt="University banner background" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover mix-blend-luminosity brightness-75 contrast-125"
               referrerPolicy="no-referrer"
             />
           </div>
